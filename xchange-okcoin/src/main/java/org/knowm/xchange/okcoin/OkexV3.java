@@ -214,6 +214,17 @@ public interface OkexV3 {
       @QueryParam("state") String state)
       throws IOException, OkexException;
 
+  @GET
+  @Path("/spot/v3/orders/{order_id}")
+  OkexOpenOrder getSpotOrder(
+      @HeaderParam(OK_ACCESS_KEY) String apiKey,
+      @HeaderParam(OK_ACCESS_SIGN) ParamsDigest signature,
+      @HeaderParam(OK_ACCESS_TIMESTAMP) String timestamp,
+      @HeaderParam(OK_ACCESS_PASSPHRASE) String passphrase,
+      @PathParam("order_id") String orderId,
+      @QueryParam("instrument_id") String instrumentId)
+      throws IOException, OkexException;
+
   /**
    * @param orderId required, order ID
    * @param instrumentId required, trading pair
