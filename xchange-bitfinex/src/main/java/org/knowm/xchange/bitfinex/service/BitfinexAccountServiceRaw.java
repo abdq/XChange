@@ -3,6 +3,7 @@ package org.knowm.xchange.bitfinex.service;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.Date;
+import java.util.List;
 import org.knowm.xchange.Exchange;
 import org.knowm.xchange.bitfinex.dto.BitfinexException;
 import org.knowm.xchange.bitfinex.v1.dto.account.BitfinexAccountFeesResponse;
@@ -21,7 +22,9 @@ import org.knowm.xchange.bitfinex.v1.dto.account.BitfinexTradingFeesRequest;
 import org.knowm.xchange.bitfinex.v1.dto.account.BitfinexWithdrawalRequest;
 import org.knowm.xchange.bitfinex.v1.dto.account.BitfinexWithdrawalResponse;
 import org.knowm.xchange.bitfinex.v1.dto.trade.BitfinexNonceOnlyRequest;
-import org.knowm.xchange.exceptions.*;
+import org.knowm.xchange.bitfinex.v2.dto.EmptyRequest;
+import org.knowm.xchange.bitfinex.v2.dto.account.LedgerEntry;
+import org.knowm.xchange.exceptions.ExchangeException;
 
 public class BitfinexAccountServiceRaw extends BitfinexBaseService {
 
@@ -99,19 +102,29 @@ public class BitfinexAccountServiceRaw extends BitfinexBaseService {
       String address,
       String tagOrPaymentId)
       throws IOException {
+    return withdraw(withdrawType, walletSelected, amount, address, tagOrPaymentId, null);
+  }
 
+  public String withdraw(
+      String withdrawType,
+      String walletSelected,
+      BigDecimal amount,
+      String address,
+      String tagOrPaymentId,
+      String currency)
+      throws IOException {
+
+    BitfinexWithdrawalRequest req =
+        new BitfinexWithdrawalRequest(
+            String.valueOf(exchange.getNonceFactory().createValue()),
+            withdrawType,
+            walletSelected,
+            amount,
+            address,
+            tagOrPaymentId);
+    req.setCurrency(currency);
     BitfinexWithdrawalResponse[] withdrawResponse =
-        bitfinex.withdraw(
-            apiKey,
-            payloadCreator,
-            signatureCreator,
-            new BitfinexWithdrawalRequest(
-                String.valueOf(exchange.getNonceFactory().createValue()),
-                withdrawType,
-                walletSelected,
-                amount,
-                address,
-                tagOrPaymentId));
+        bitfinex.withdraw(apiKey, payloadCreator, signatureCreator, req);
     if ("error".equalsIgnoreCase(withdrawResponse[0].getStatus())) {
       throw new ExchangeException(withdrawResponse[0].getMessage());
     }
@@ -187,5 +200,18 @@ public class BitfinexAccountServiceRaw extends BitfinexBaseService {
             until,
             limit,
             wallet));
+  }
+
+  public List<LedgerEntry> getLedgerEntries(
+      String currency, Long startTimeMillis, Long endTimeMillis, Long limit) throws IOException {
+    return bitfinexV2.getLedgerEntries(
+        exchange.getNonceFactory(),
+        apiKey,
+        signatureV2,
+        currency,
+        startTimeMillis,
+        endTimeMillis,
+        limit,
+        EmptyRequest.INSTANCE);
   }
 }
